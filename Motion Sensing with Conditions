@@ -1,0 +1,172 @@
+/**
+ *  Motion Sensing with Conditions
+ *  Copyright 2016 Steve Jackson
+ *
+ *  Changelog:
+ *		Version 1.2 = 	Motion Sensor, Disable Switches, Lux Values, Lights to turn on
+ *						Lights to Turn Off, Level for Dimmable Switches, App Name & Mode
+ *
+ *  Ideas for coding methods were extrapolated from the code "Disable motion off if already on"
+ *  by Bruce Ravenel - Copyright 2015 - 
+ *	https://github.com/bravenel/SmartThings/blob/master/Disable%20motion%20off%20if%20already%20on
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is
+ *  distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and limitations under the License.
+ *  
+ */
+
+definition(
+    name: "Conditional Motion Sensing",
+    namespace: "Steve Jackson",
+    author: "Steve Jackson",
+    description: "Turns Switches On When Motion is detected and conditions are met and Off afterwards.",
+    category: "My Apps",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+)
+
+preferences {
+	section("Motion Sensor to Use?"){
+		input "motion1", "capability.motionSensor", multiple: false, required: true
+	}
+	section("Turn Off After X minutes of no motion?"){
+	    input "turnoffminutes", "number", required: false, title: "Minutes?"
+	}
+    section("Motion Disable Switches (MUST BE ON to disable)?"){
+		input "dndswitch", "capability.switch", multiple: true, required: false
+	}	
+    section("Lux Sensor to Use?"){
+		input "luxsensor", "capability.illuminanceMeasurement", multiple: false, required: false
+	}
+	section("Lux Turn On Threshold Value?"){
+	    input "lowluxvalue", "number", required: false, default: 0, title: "Lux Value (default=0)?"
+	}
+	section("On/Off Switches to Turn On?"){
+		input "switchestoturnon", "capability.switch", multiple: true, required: false
+	}
+	section("Dimmable Switches To Turn On?"){
+		input "switchestodim", "capability.switchLevel", multiple: true, required: false, default: 50
+	}
+    section("Level For Dimmable Switches?"){
+		input "dimlevel", "number", multiple: false, required: false, default: 100, title: "Dim Level (default=100)?"
+	}
+    section("Switches to Turn Off?"){
+		input "switchestoturnoff", "capability.switch", multiple: true, required: true, title: "Include On/Off & Dimmable"
+	}
+}
+
+
+def installed() {
+		initialize()
+}
+
+def updated() {
+		unsubscribe()
+		initialize()
+}
+
+def initialize() {
+		subscribe(motion1, "motion.active", motionHandler)
+        subscribe(motion1, "motion.inactive", nomotionHandler)
+    	subscribe(dndswitch, "switch", switchHandler)
+        state.pendingoff = false
+}
+
+def switchHandler(evt) {  
+		log.debug "switchHandler event"
+        def switcheson = false
+        dndswitch.each {switcheson = switcheson || it.currentSwitch == "on"}
+            if (switcheson) {
+        	state.pendingoff = false
+            return
+        }
+        def motionstate = motion1.currentMotion
+        if(motionstate == "inactive") {
+        	log.debug "No motion and all DND switches are off.  Turn off controlled Switches"
+            state.pendingoff = true
+            controlledswitchesoff()
+        } else {
+        	log.debug "Motion and all DND switches are off.  Check for Lux"
+            state.pendingoff = false
+            	if (luxsensor) {
+                	def currentlux = luxsensor.currentIlluminance
+                    if (currentlux < lowluxvalue) {
+                        log.debug "Lux of $currentlux below threshold of $lowluxvalue.  Turn on lights."
+                        controlledswitcheson()
+                    } else {
+                    	log.debug "Lux of $currentlux above threshold of $lowluxvalue.  Turn off lights."
+                        state.pendingoff = true
+                        controlledswitchesoff()
+                    }
+                } else {
+                    	state.pendingoff = false
+            			controlledswitcheson()
+                }
+        }
+}
+                
+def motionHandler(evt) { 
+		log.debug "motionHandler event"
+        def switcheson = false
+        dndswitch.each {switcheson = switcheson || it.currentSwitch == "on"}
+        if(switcheson) {
+        	return
+        }
+        log.debug "Motion and all DND switches are off.  Check for Lux"
+        
+          if (luxsensor) {
+                	def currentlux = luxsensor.currentIlluminance
+                    if (currentlux < lowluxvalue) {
+                        log.debug "Lux of $currentlux below threshold of $lowluxvalue.  Turn on lights."
+                        state.pendingoff = false
+            			controlledswitcheson()
+                    }
+                	} else {
+                    	state.pendingoff = false
+            			controlledswitcheson()
+                }  
+}
+
+def nomotionHandler(evt) {
+		log.debug "nomotionHandler event"
+        def switcheson = false
+        dndswitch.each {switcheson = switcheson || it.currentSwitch == "on"}
+        if(switcheson) {
+        	return
+        }
+        state.pendingoff = true
+        log.debug "minutes = $turnoffminutes"
+        if(turnoffminutes) {
+           	log.debug "Turn off delay is true with $turnoffminutes minutes"
+                runIn(turnoffminutes*60, controlledswitchesoff) 
+            } else {
+            	log.debug "No Turn off delay entered"
+                controlledswitchesoff()
+                }
+}
+
+def controlledswitchesoff() {
+		log.debug "switchesoff event, pendingOff = $state.pendingoff"
+        if (state.pendingoff) {
+        	switchestoturnoff.off()
+        }
+}
+
+def controlledswitcheson() {
+		log.debug "switcheson event, pendingOff = $state.pendingoff"
+        if (switchestoturnon) {
+        	switchestoturnon.on()
+        }
+        if (switchestodim) {
+        	switchestodim.setLevel(dimlevel)
+        }
+}
+
+
