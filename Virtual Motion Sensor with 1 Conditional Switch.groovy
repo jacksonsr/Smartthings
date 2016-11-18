@@ -36,7 +36,6 @@ preferences {
 	}
 }
 
-
 def installed() {
 	subscribe(motion1, "motion", motionHandler)
     subscribe(dndswitch, "switch", switchHandler)
