@@ -39,10 +39,10 @@ preferences {
 	section("Turn Off After X minutes of no motion?"){
 	    input "turnoffminutes", "number", required: false, title: "Minutes?"
 	}
-    section("Motion Disable Switches (MUST BE ON to disable)?"){
+    	section("Motion Disable Switches (MUST BE ON to disable)?"){
 		input "dndswitch", "capability.switch", multiple: true, required: false
 	}	
-    section("Lux Sensor to Use?"){
+    	section("Lux Sensor to Use?"){
 		input "luxsensor", "capability.illuminanceMeasurement", multiple: false, required: false
 	}
 	section("Lux Turn On Threshold Value?"){
@@ -54,10 +54,10 @@ preferences {
 	section("Dimmable Switches To Turn On?"){
 		input "switchestodim", "capability.switchLevel", multiple: true, required: false, default: 50
 	}
-    section("Level For Dimmable Switches?"){
+    	section("Level For Dimmable Switches?"){
 		input "dimlevel", "number", multiple: false, required: false, default: 100, title: "Dim Level (default=100)?"
 	}
-    section("Switches to Turn Off?"){
+    	section("Switches to Turn Off?"){
 		input "switchestoturnoff", "capability.switch", multiple: true, required: true, title: "Include On/Off & Dimmable"
 	}
 }
