@@ -4,7 +4,7 @@ This is a place where I store SmartThings apps that I use around our house.  If 
 
 I am very new at Groovy so some of the code that I have written may not be  "up to snuff" or just plain BAD.  If you are a groovy programmer, I would be more than happy for someone to show me how to make my code better.  My coding experience goes back over 30 years ago and involved using BASIC.  I started on a TRS80 and moved to Commodores, Sinclairs and eventually IBM PC's and their clones.  
 
-I also did some industrial programming using "Relay Ladder Logic", mainly boolean, on Texas Instruments and Eagle Signal programmable controlers.
+I also did some industrial programming using "Relay Ladder Logic", mainly boolean, on Texas Instruments and Eagle Signal programmable controllers.
 
 Thanks for looking around.
 
