@@ -86,5 +86,5 @@ def switchHandler(evt) {
     			virtualmotion.inactive()
             	log.debug "Changing State of Simulated Motion Sensor to inactive, DND switch is OFF"
     }
-}	
+ }	
 }}
